@@ -10,7 +10,7 @@ use MT::Util qw( epoch2ts ts2epoch );
 
 use vars qw( $NAME $VERSION );
 $NAME = 'LastYearEntries';
-$VERSION = '0.01';
+$VERSION = '0.10';
 
 use base qw( MT::Plugin );
 my $plugin = __PACKAGE__->new({
@@ -19,11 +19,11 @@ my $plugin = __PACKAGE__->new({
     key => $NAME,
     version => $VERSION,
     description => <<PERLDOCHERE,
-Get a list of entries which posted last year about this time.
+Get a list of entries that posted last year about this time.
 PERLDOCHERE
     author_name => 'Piroli YUKARINOMIYA',
     author_link => 'http://www.magicvox.net/site/profile',
-    doc_link => 'http://www.magicvox.net/',
+    doc_link => 'http://www.magicvox.net/archive/2008/09121803/',
 });
 MT->add_plugin( $plugin );
 
