@@ -2,15 +2,17 @@ package MT::Plugin::OMV::LastYearEntries;
 ### LastYearEntries
 ###         Programmed by Piroli YUKARINOMIYA (MagicVox)
 ###         Open MagicVox.net - http://www.magicvox.net/
+###         @see http://www.magicvox.net/archive/2008/09121803/
 
 use strict;
 use MT;
+use MT::Entry;
 use MT::Template::Context;
 use MT::Util qw( epoch2ts ts2epoch );
 
 use vars qw( $NAME $VERSION );
 $NAME = 'LastYearEntries';
-$VERSION = '0.10';
+$VERSION = '0.11';
 
 use base qw( MT::Plugin );
 my $plugin = __PACKAGE__->new({
@@ -33,27 +35,28 @@ MT->add_plugin( $plugin );
 MT::Template::Context->add_container_tag( LastYearEntries => \&_hdlr_last_year_entries );
 sub _hdlr_last_year_entries {
     my( $ctx, $args, $cond ) = @_;
-    my $blog = $ctx->stash( 'blog' );
+    my $blog = $ctx->stash( 'blog' )
+        or return '';
 
     # Get current time with context
-    my $current_time = time;
     my $entry = $ctx->stash( 'entry' );
-    $current_time = ts2epoch( $blog, $entry->authored_on )
-        if defined $entry;
+    my $current_time = $entry
+            ? ts2epoch( $blog, $entry->created_on )
+            : time;
     my $tm_centered = ts2epoch( $blog, last_year_ts( epoch2ts( $blog, $current_time )));
 
     # Load entries
     my $days = $args->{days} || 30;
     my $ts_start  = epoch2ts( $blog, $tm_centered - $days * 24 * 60 * 60 );
     my $ts_end    = epoch2ts( $blog, $tm_centered + $days * 24 * 60 * 60 );
-    my %terms = ( authored_on => [ $ts_start, $ts_end ]);
-    my %args = ( range => { authored_on => 1 });
+    my %terms = ( blog_id => $blog->id, created_on => [ $ts_start, $ts_end ], status => MT::Entry::RELEASE());
+    my %args = ( range => { created_on => 1 });
     my @entries = MT::Entry->load( \%terms, \%args );
 
     # Sort by distance between authored ts and centered ts
     @entries = sort {
-            abs( ts2epoch( $blog, $a->authored_on ) - $tm_centered )
-                    <=> abs( ts2epoch( $blog, $b->authored_on ) - $tm_centered )
+            abs( ts2epoch( $blog, $a->created_on ) - $tm_centered )
+                    <=> abs( ts2epoch( $blog, $b->created_on ) - $tm_centered )
     } @entries;
     # and cut off
     my $lastn = $args->{lastn} || $#entries + 1;
@@ -61,8 +64,8 @@ sub _hdlr_last_year_entries {
 
     # Sort by authored_on again
     @entries = defined $args->{sort_order} && $args->{sort_order} eq 'descend'
-            ? sort { $b->authored_on <=> $a->authored_on } @entries
-            : sort { $a->authored_on <=> $b->authored_on } @entries;
+            ? sort { $b->created_on <=> $a->created_on } @entries
+            : sort { $a->created_on <=> $b->created_on } @entries;
 
     # build
     my $res = '';
@@ -77,7 +80,7 @@ sub _hdlr_last_year_entries {
                 EntriesFooter => (!defined $entries[$i+1]),
          });
         return $ctx->error( $builder->errstr ) unless defined $out;
-        $res .= $out;         
+        $res .= $out;
         $i++;
     }
     return $res;
